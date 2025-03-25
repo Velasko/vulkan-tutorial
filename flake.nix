@@ -5,7 +5,7 @@
   inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
 
   # Flake outputs
-  outputs = { self, nixpkgs } @inputs :
+  outputs = { self, nixpkgs } @inputs:
     let
       # The systems supported for this flake
       supportedSystems = [
@@ -25,14 +25,14 @@
         default = pkgs.mkShell {
           # The Nix packages provided in the environment
           # Add any you need here
-          packages = with pkgs; [ vulkan-tools ];
+          packages = with pkgs; [ vulkan-tools libGL libGLU virtualglLib ];
 
           # Set any environment variables for your dev shell
           env = { };
 
           # Add any shell logic you want executed any time the environment is activated
           shellHook = ''
-		  	${pkgs.zsh}
+            		  	${pkgs.zsh}
           '';
         };
       });
