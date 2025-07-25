@@ -1,7 +1,7 @@
 [package]
 name = "vulkan-tutorial"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 anyhow = "1"
@@ -11,7 +11,7 @@ png = "0.17"
 pretty_env_logger = "0.5"
 thiserror = "1"
 tobj = { version = "3", features = ["log"] }
-vulkanalia = { version = "=0.26.0", features = [
+vulkanalia = { version = "=0.28.0", features = [
 	"libloading",
 	"provisional",
 	"window",
