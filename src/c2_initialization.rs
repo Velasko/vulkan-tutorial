@@ -5,11 +5,11 @@ use vulkano::device::QueueFlags;
 use vulkano::device::{Device, DeviceCreateInfo, QueueCreateInfo};
 use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo};
 
-use vulkano::buffer::{Buffer, BufferCreateInfo, BufferUsage};
 use vulkano::memory::allocator::StandardMemoryAllocator;
 use vulkano::memory::allocator::{AllocationCreateInfo, MemoryTypeFilter};
 
 use vulkano::buffer::BufferContents;
+use vulkano::buffer::{Buffer, BufferCreateInfo, BufferUsage};
 
 #[derive(BufferContents)]
 #[repr(C)]
