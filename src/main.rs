@@ -2,7 +2,9 @@
 
 mod c2_initialization;
 mod c3_buffers;
+mod c4_compute_pipeline;
+mod prelude;
 
 fn main() {
-    c3_buffers::main();
+    c4_compute_pipeline::main();
 }
