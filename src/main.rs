@@ -12,8 +12,8 @@ use winit::{
 };
 
 use vulkano::{
-    Version, VulkanLibrary,
-    instance::{Instance, InstanceCreateInfo, InstanceExtensions},
+    Version, Version as vkVersion, VulkanLibrary,
+    instance::{Instance, InstanceCreateInfo, InstanceExtensions, debug::ValidationFeatureEnable},
     swapchain::Surface,
 };
 
@@ -22,15 +22,41 @@ struct HelloTriangleApplication {
     instance: Arc<Instance>,
 }
 
+const WIDTH: u32 = 800;
+const HEIGHT: u32 = 600;
+
 impl HelloTriangleApplication {
     fn new(event_loop: &EventLoop<()>) -> Self {
         let library = VulkanLibrary::new().expect("no local Vulkan library/DLL");
-        let required_extensions = Surface::required_extensions(&event_loop).unwrap();
+        let enabled_extensions = InstanceExtensions {
+            ext_validation_features: true,
+            ..Surface::required_extensions(&event_loop).unwrap()
+        };
+        let enabled_validation_features = vec![ValidationFeatureEnable::BestPractices];
         let instance = Instance::new(
             library,
             InstanceCreateInfo {
+                application_name: Some(String::from("Hello Triangle")),
+                application_version: vkVersion {
+                    major: 1,
+                    minor: 0,
+                    patch: 0,
+                },
+                engine_name: Some(String::from("No Engine")),
+                engine_version: vkVersion {
+                    major: 1,
+                    minor: 0,
+                    patch: 0,
+                },
+                max_api_version: Some(vkVersion {
+                    major: 1,
+                    minor: 4,
+                    patch: 0,
+                }),
+
                 // flags: InstanceCreateFlags::ENUMERATE_PORTABILITY,
-                enabled_extensions: required_extensions,
+                enabled_extensions,
+                enabled_validation_features,
                 ..Default::default()
             },
         )
@@ -76,12 +102,17 @@ impl ApplicationHandler for HelloTriangleApplication {
 }
 
 fn main() {
-    if let Ok(event_loop) = EventLoop::new() {
-        event_loop.set_control_flow(ControlFlow::Poll);
+    match EventLoop::new() {
+        Ok(event_loop) => {
+            event_loop.set_control_flow(ControlFlow::Poll);
 
-        let mut app = HelloTriangleApplication::new(&event_loop);
+            let mut app = HelloTriangleApplication::new(&event_loop);
 
-        // lunarg's app.run()
-        event_loop.run_app(&mut app);
-    };
+            // lunarg's app.run()
+            event_loop.run_app(&mut app);
+        }
+        Err(error) => {
+            println!("Some error...");
+        }
+    }
 }
