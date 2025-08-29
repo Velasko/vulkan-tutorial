@@ -29,9 +29,16 @@ impl HelloTriangleApplication {
     fn new(event_loop: &EventLoop<()>) -> Self {
         let library = VulkanLibrary::new().expect("no local Vulkan library/DLL");
         let enabled_extensions = InstanceExtensions {
+            // VK_LAYER_KHRONOS_validation
             ext_validation_features: true,
+            ext_layer_settings: true,
             ..Surface::required_extensions(&event_loop).unwrap()
         };
+
+        println!("Supported extensions: {:?}", library.supported_extensions());
+        println!("==============");
+        println!("Requested extensions: {:?}", enabled_extensions);
+
         let enabled_validation_features = vec![ValidationFeatureEnable::BestPractices];
         let instance = Instance::new(
             library,
@@ -115,4 +122,5 @@ fn main() {
             println!("Some error...");
         }
     }
+    println!("end");
 }
