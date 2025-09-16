@@ -107,12 +107,12 @@ impl App {
     #[rustfmt::skip]
     unsafe fn destroy(&mut self) {
         self.device.destroy_device(None);
+        self.instance.destroy_surface_khr(self.data.surface, None);
 
         if VALIDATION_ENABLED {
             self.instance.destroy_debug_utils_messenger_ext(self.data.messenger, None);
         }
 
-        self.instance.destroy_surface_khr(self.data.surface, None);
         self.instance.destroy_instance(None);
     }
 }
@@ -120,9 +120,10 @@ impl App {
 /// The Vulkan handles and associated properties used by our Vulkan app.
 #[derive(Clone, Debug, Default)]
 struct AppData {
-    surface: vk::SurfaceKHR,
     // Debug
     messenger: vk::DebugUtilsMessengerEXT,
+    // Surface
+    surface: vk::SurfaceKHR,
     // Physical Device / Logical Device
     physical_device: vk::PhysicalDevice,
     graphics_queue: vk::Queue,
@@ -283,11 +284,14 @@ unsafe fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut A
     unique_indices.insert(indices.present);
 
     let queue_priorities = &[1.0];
-    let queue_infos = unique_indices.iter().map(|i| {
-    vk::DeviceQueueCreateInfo::builder()
-        .queue_family_index(*i)
-        .queue_priorities(queue_priorities)
-    }).collect::<Vec<_>>();
+    let queue_infos = unique_indices
+        .iter()
+        .map(|i| {
+            vk::DeviceQueueCreateInfo::builder()
+                .queue_family_index(*i)
+                .queue_priorities(queue_priorities)
+        })
+        .collect::<Vec<_>>();
 
     // Layers
 
@@ -342,6 +346,11 @@ impl QueueFamilyIndices {
     unsafe fn get(instance: &Instance, data: &AppData, physical_device: vk::PhysicalDevice) -> Result<Self> {
         let properties = instance.get_physical_device_queue_family_properties(physical_device);
 
+        let graphics = properties
+            .iter()
+            .position(|p| p.queue_flags.contains(vk::QueueFlags::GRAPHICS))
+            .map(|i| i as u32);
+
         let mut present = None;
         for (index, properties) in properties.iter().enumerate() {
             if instance.get_physical_device_surface_support_khr(physical_device, index as u32, data.surface)? {
@@ -349,11 +358,6 @@ impl QueueFamilyIndices {
                 break;
             }
         }
-
-        let graphics = properties
-            .iter()
-            .position(|p| p.queue_flags.contains(vk::QueueFlags::GRAPHICS))
-            .map(|i| i as u32);
 
         if let (Some(graphics), Some(present)) = (graphics, present) {
             Ok(Self { graphics, present })
