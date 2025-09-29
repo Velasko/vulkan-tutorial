@@ -124,6 +124,10 @@ impl App {
     }
 }
 
+unsafe fn create_pipeline(device: &Device, data: &mut AppData) -> Result<()> {
+    Ok(())
+}
+
 /// The Vulkan handles and associated properties used by our Vulkan app.
 #[derive(Clone, Debug, Default)]
 struct AppData {
