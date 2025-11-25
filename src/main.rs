@@ -125,7 +125,6 @@ impl App {
             u64::MAX,
         )?;
 
-        self.device.reset_fences(&[self.data.in_flight_fences[self.frame]])?;
 
         let image_index = self
             .device
@@ -135,6 +134,16 @@ impl App {
                 self.data.image_available_semaphores[self.frame],
                 vk::Fence::null(),
             )?.0 as usize;
+
+        if !self.data.images_in_flight[image_index as usize].is_null() {
+            self.device.wait_for_fences(
+                &[self.data.images_in_flight[image_index as usize]],
+                true,
+                u64::MAX,
+            )?;
+        }
+
+        self.data.images_in_flight[image_index as usize] = self.data.in_flight_fences[self.frame];
 
         let wait_semaphores = &[self.data.image_available_semaphores[self.frame]];
         let wait_stages = &[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
@@ -146,7 +155,13 @@ impl App {
             .command_buffers(command_buffers)
             .signal_semaphores(signal_semaphores);
         
-        self.device.queue_submit(self.data.graphics_queue, &[submit_info], self.data.in_flight_fences[self.frame],)?;
+        self.device.reset_fences(&[self.data.in_flight_fences[self.frame]])?;
+
+        self.device.queue_submit(
+            self.data.graphics_queue,
+            &[submit_info],
+            self.data.in_flight_fences[self.frame],
+        )?;
 
         let swapchains = &[self.data.swapchain];
         let image_indices = &[image_index as u32];
