@@ -12,6 +12,11 @@
 use std::collections::HashSet;
 use std::ffi::CStr;
 use std::os::raw::c_void;
+use std::mem::size_of;
+
+use cgmath::{vec2, vec3};
+type Vec2 = cgmath::Vector2<f32>;
+type Vec3 = cgmath::Vector3<f32>;
 
 use anyhow::{anyhow, Result};
 use log::*;
@@ -42,6 +47,51 @@ const DEVICE_EXTENSIONS: &[vk::ExtensionName] = &[vk::KHR_SWAPCHAIN_EXTENSION.na
 const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 
 const MAX_FRAMES_IN_FLIGHT: usize = 2;
+
+static VERTICES: [Vertex; 3] = [
+    Vertex::new(vec2( 0.0, -0.5), vec3(1.0, 0.0, 0.0)),
+    Vertex::new(vec2( 0.5,  0.5), vec3(0.0, 1.0, 0.0)),
+    Vertex::new(vec2(-0.5,  0.5), vec3(0.0, 0.0, 1.0)),
+];
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+struct Vertex {
+    pos: Vec2,
+    color: Vec3,
+}
+
+impl Vertex {
+    const fn new(pos: Vec2, color: Vec3) -> Self {
+        Self { pos, color }
+    }
+
+    fn binding_description() -> vk::VertexInputBindingDescription {
+        vk::VertexInputBindingDescription::builder()
+        .binding(0)
+        .stride(size_of::<Vertex>() as u32)
+        .input_rate(vk::VertexInputRate::VERTEX)
+        .build()
+    }
+
+    fn attribute_descriptions() -> [vk::VertexInputAttributeDescription; 2] {
+        let pos = vk::VertexInputAttributeDescription::builder()
+            .binding(0)
+            .location(0)
+            .format(vk::Format::R32G32_SFLOAT)
+            .offset(0)
+            .build();
+
+        let color = vk::VertexInputAttributeDescription::builder()
+            .binding(0)
+            .location(1)
+            .format(vk::Format::R32G32B32_SFLOAT)
+            .offset(size_of::<Vec2>() as u32)
+            .build();
+
+        [pos, color]
+    }
+}
 
 #[rustfmt::skip]
 fn main() -> Result<()> {
@@ -148,6 +198,7 @@ impl App {
             Err(vk::ErrorCode::OUT_OF_DATE_KHR) => return self.recreate_swapchain(window),
             Err(e) => return Err(anyhow!(e)),
         };
+        
 
         if !self.data.images_in_flight[image_index as usize].is_null() {
             self.device.wait_for_fences(
@@ -158,6 +209,7 @@ impl App {
         }
 
         self.data.images_in_flight[image_index as usize] = self.data.in_flight_fences[self.frame];
+
 
         let wait_semaphores = &[self.data.image_available_semaphores[self.frame]];
         let wait_stages = &[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
@@ -399,8 +451,8 @@ unsafe fn create_shader_module(
 }
 
 unsafe fn create_pipeline(device: &Device, data: &mut AppData) -> Result<()> {
-    let vert = include_bytes!("../shaders/vert.spv");
-    let frag = include_bytes!("../shaders/frag.spv");
+    let vert = include_bytes!("../shaders/shader.vert.spv");
+    let frag = include_bytes!("../shaders/shader.frag.spv");
 
     let vert_shader_module = create_shader_module(device, &vert[..])?;
     let frag_shader_module = create_shader_module(device, &frag[..])?;
@@ -408,7 +460,11 @@ unsafe fn create_pipeline(device: &Device, data: &mut AppData) -> Result<()> {
     let vert_stage = vk::PipelineShaderStageCreateInfo::builder().stage(vk::ShaderStageFlags::VERTEX).module(vert_shader_module).name(b"main\0");
     let frag_stage = vk::PipelineShaderStageCreateInfo::builder().stage(vk::ShaderStageFlags::FRAGMENT).module(frag_shader_module).name(b"main\0");
 
-    let vertex_input_state = vk::PipelineVertexInputStateCreateInfo::builder();
+    let binding_descriptions = &[Vertex::binding_description()];
+    let attribute_descriptions = Vertex::attribute_descriptions();
+    let vertex_input_state = vk::PipelineVertexInputStateCreateInfo::builder()
+        .vertex_binding_descriptions(binding_descriptions)
+        .vertex_attribute_descriptions(&attribute_descriptions);
 
     let input_assembly_state = vk::PipelineInputAssemblyStateCreateInfo::builder()
         .topology(vk::PrimitiveTopology::TRIANGLE_LIST)
